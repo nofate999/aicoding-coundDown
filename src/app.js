@@ -24,52 +24,88 @@ document.addEventListener('DOMContentLoaded', function() {
     now.setHours(now.getHours() + 1);
     dueDateInput.value = formatDateTimeLocal(now);
 
-    // 每秒更新一次倒计时
-    setInterval(updateCountdowns, 1000);
+    // 每秒更新一次倒计时和检查任务类型转换
+    setInterval(() => {
+        updateCountdowns();
+        autoConvertTaskTypes();
+    }, 1000);
+
+    // 添加任务
+        taskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const taskName = taskNameInput.value.trim();
+            const taskType = taskTypeInput.value;
+            const dueDate = new Date(dueDateInput.value);
+            const taskDescription = document.getElementById('taskDescription').value;
+
+            if (!taskName || !taskType || !dueDateInput.value) {
+                alert('请填写所有字段');
+                return;
+            }
+
+            if (dueDate <= new Date()) {
+                alert('到期时间必须是将来的时间');
+                return;
+            }
+
+            const task = {
+                id: Date.now(),
+                name: taskName,
+                type: taskType,
+                dueDate: dueDate.toISOString(),
+                description: taskDescription,
+                completed: false
+            };
+
+            tasks.push(task);
+            saveTasks();
+            renderTasks();
+            updateStats();
+
+            // 重置表单
+            taskForm.reset();
+
+            // 重新设置默认时间
+            const now = new Date();
+            now.setHours(now.getHours() + 1);
+            dueDateInput.value = formatDateTimeLocal(now);
+
+            // 设置任务类型为之前选择的值
+            taskTypeInput.value = taskType;
+        });
 });
 
-// 添加任务
-taskForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const taskName = taskNameInput.value.trim();
-    const taskType = taskTypeInput.value;
-    const dueDate = new Date(dueDateInput.value);
-
-    if (!taskName || !taskType || !dueDateInput.value) {
-        alert('请填写所有字段');
-        return;
-    }
-
-    if (dueDate <= new Date()) {
-        alert('到期时间必须是将来的时间');
-        return;
-    }
-
-    const task = {
-        id: Date.now(),
-        name: taskName,
-        type: taskType,
-        dueDate: dueDate.toISOString(),
-        completed: false
-    };
-
-    tasks.push(task);
-    saveTasks();
-    renderTasks();
-    updateStats();
-
-    // 重置表单
-    taskForm.reset();
-
-    // 重新设置默认时间
+// 自动转换任务类型
+function autoConvertTaskTypes() {
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    dueDateInput.value = formatDateTimeLocal(now);
+    let updated = false;
 
-    // 设置任务类型为之前选择的值
-    taskTypeInput.value = taskType;
-});
+    tasks.forEach(task => {
+        if (task.completed) return;
+
+        const dueDate = new Date(task.dueDate);
+        const timeDiff = dueDate - now;
+        const daysLeft = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+
+        // 每月任务最后一周自动转为每周任务
+        if (task.type === 'monthly' && daysLeft <= 7) {
+            task.type = 'weekly';
+            updated = true;
+        } 
+        // 每周任务最后一天自动转为每日任务
+        else if (task.type === 'weekly' && daysLeft <= 1) {
+            task.type = 'daily';
+            updated = true;
+        }
+    });
+
+    if (updated) {
+        saveTasks();
+        renderTasks();
+        updateStats();
+    }
+}
 
 // 渲染任务列表
 function renderTasks() {
@@ -85,65 +121,113 @@ function renderTasks() {
     // 按到期时间排序
     tasks.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
 
-    tasks.forEach(task => {
-        const taskElement = document.createElement('div');
-    taskElement.className = 'task-item';
-    taskElement.dataset.id = task.id;
+    // 筛选待办任务和已完成任务
+    const todoTasks = tasks.filter(t => !t.completed);
+    const completedTasks = tasks.filter(t => t.completed);
 
-    const dueDate = new Date(task.dueDate);
-    const now = new Date();
-    const timeDiff = dueDate - now;
+    // 渲染待办任务
+    if (todoTasks.length > 0) {
+        const todoSection = document.createElement('div');
+        todoSection.innerHTML = '<h3 class="section-subtitle">待办任务</h3>';
+        tasksContainer.appendChild(todoSection);
 
-    let countdownText = '';
-    let isExpired = false;
+        todoTasks.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task-item';
+            taskElement.dataset.id = task.id;
 
-    if (timeDiff <= 0) {
-        countdownText = '已过期';
-        isExpired = true;
-        taskElement.classList.add('expired');
-    } else {
-        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            const dueDate = new Date(task.dueDate);
+            const now = new Date();
+            const timeDiff = dueDate - now;
 
-        countdownText = `${days}天 ${hours}小时 ${minutes}分 ${seconds}秒`;
+            let countdownText = '';
+            let isExpired = false;
 
-        // 如果剩余时间少于1天，添加紧急样式
-        if (days === 0 && hours < 24) {
-            taskElement.classList.add('urgent');
-        }
+            if (timeDiff <= 0) {
+                countdownText = '已过期';
+                isExpired = true;
+                taskElement.classList.add('expired');
+            } else {
+                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+                countdownText = `${days}天 ${hours}小时 ${minutes}分 ${seconds}秒`;
+
+                // 如果剩余时间少于1天，添加紧急样式
+                if (days === 0 && hours < 24) {
+                    taskElement.classList.add('urgent');
+                }
+            }
+
+            const typeClass = task.type === 'daily' ? 'daily' :
+                task.type === 'weekly' ? 'weekly' : 'monthly';
+
+            const typeText = task.type === 'daily' ? '每日任务' :
+                task.type === 'weekly' ? '每周任务' : '每月任务';
+
+            taskElement.innerHTML = `
+                        <div class="task-header">
+                            <div class="task-name">${task.name}</div>
+                            <div class="task-type ${typeClass}">${typeText}</div>
+                        </div>
+                        ${task.description ? `<div class="task-description"><i class="fas fa-align-left"></i> ${task.description}</div>` : ''}
+                        <div class="task-due"><i class="far fa-clock"></i> 到期时间: ${formatDate(dueDate)}</div>
+                        <div class="countdown">${countdownText}</div>
+                        <div class="task-actions">
+                            <button class="complete-btn" onclick="toggleComplete(${task.id})">
+                                <i class="fas fa-${task.completed ? 'undo' : 'check'}"></i> ${task.completed ? '标记未完成' : '标记完成'}
+                            </button>
+                            <button class="delete-btn" onclick="deleteTask(${task.id})">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </div>
+                    `;
+
+            tasksContainer.appendChild(taskElement);
+        });
     }
 
-    if (task.completed) {
-        taskElement.classList.add('completed');
+    // 渲染已完成任务
+    if (completedTasks.length > 0) {
+        const completedSection = document.createElement('div');
+        completedSection.innerHTML = '<h3 class="section-subtitle">已完成任务</h3>';
+        tasksContainer.appendChild(completedSection);
+
+        completedTasks.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = 'task-item completed';
+            taskElement.dataset.id = task.id;
+
+            const dueDate = new Date(task.dueDate);
+
+            const typeClass = task.type === 'daily' ? 'daily' :
+                task.type === 'weekly' ? 'weekly' : 'monthly';
+
+            const typeText = task.type === 'daily' ? '每日任务' :
+                task.type === 'weekly' ? '每周任务' : '每月任务';
+
+            taskElement.innerHTML = `
+                        <div class="task-header">
+                            <div class="task-name">${task.name}</div>
+                            <div class="task-type ${typeClass}">${typeText}</div>
+                        </div>
+                        <div class="task-due"><i class="far fa-clock"></i> 到期时间: ${formatDate(dueDate)}</div>
+                        <div class="countdown">已完成</div>
+                        <div class="task-actions">
+                            <button class="complete-btn" onclick="toggleComplete(${task.id})">
+                                <i class="fas fa-${task.completed ? 'undo' : 'check'}"></i> ${task.completed ? '标记未完成' : '标记完成'}
+                            </button>
+                            <button class="delete-btn" onclick="deleteTask(${task.id})">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </div>
+                    `;
+
+            tasksContainer.appendChild(taskElement);
+        });
     }
-
-    const typeClass = task.type === 'daily' ? 'daily' :
-        task.type === 'weekly' ? 'weekly' : 'monthly';
-
-    const typeText = task.type === 'daily' ? '每日任务' :
-        task.type === 'weekly' ? '每周任务' : '每月任务';
-
-    taskElement.innerHTML = `
-                    <div class="task-header">
-                        <div class="task-name">${task.name}</div>
-                        <div class="task-type ${typeClass}">${typeText}</div>
-                    </div>
-                    <div class="task-due"><i class="far fa-clock"></i> 到期时间: ${formatDate(dueDate)}</div>
-                    <div class="countdown">${countdownText}</div>
-                    <div class="task-actions">
-                        <button class="complete-btn" onclick="toggleComplete(${task.id})">
-                            <i class="fas fa-${task.completed ? 'undo' : 'check'}"></i> ${task.completed ? '标记未完成' : '标记完成'}
-                        </button>
-                        <button class="delete-btn" onclick="deleteTask(${task.id})">
-                            <i class="fas fa-trash"></i> 删除
-                        </button>
-                    </div>
-                `;
-
-    tasksContainer.appendChild(taskElement);
-});
 }
 
 // 更新倒计时

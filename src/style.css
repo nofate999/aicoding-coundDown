@@ -95,6 +95,15 @@ h1 {
     gap: 10px;
 }
 
+.section-subtitle {
+    font-size: 1.2rem;
+    margin: 30px 0 20px 0;
+    color: #555;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+    font-weight: 600;
+}
+
 .section-title i {
     color: #6a11cb;
 }
@@ -213,6 +222,14 @@ button:hover {
 .monthly {
     background-color: #fce4ec;
     color: #c2185b;
+}
+
+.task-description {
+    margin-top: 12px;
+    color: #888;
+    font-size: 0.9em;
+    line-height: 1.4;
+    font-style: italic;
 }
 
 .task-due {

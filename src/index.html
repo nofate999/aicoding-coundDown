@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>任务倒计时管理器</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+        <header>
+                <h1><i class="fas fa-tasks"></i> 任务倒计时管理器</h1>
+                <p class="subtitle">高效管理您的每日、每周和每月任务，实时追踪任务进度和剩余时间</p>
+        </header>
+
+        <div class="stats">
+                <div class="stat-item">
+                        <div class="stat-value" id="totalTasks">0</div>
+                        <div class="stat-label">总任务数</div>
+                </div>
+                <div class="stat-item">
+                        <div class="stat-value" id="activeTasks">0</div>
+                        <div class="stat-label">进行中</div>
+                </div>
+                <div class="stat-item">
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">已完成</div>
+                </div>
+                <div class="stat-item">
+                        <div class="stat-value" id="expiredTasks">0</div>
+                        <div class="stat-label">已过期</div>
+                </div>
+        </div>
+
+        <div class="main-content">
+                <div class="task-form">
+                        <h2 class="section-title"><i class="fas fa-plus-circle"></i> 添加新任务</h2>
+                        <form id="taskForm">
+                                <div class="form-group">
+                                        <label for="taskName"><i class="fas fa-pen"></i> 任务名称</label>
+                                        <input type="text" id="taskName" placeholder="输入任务名称" required>
+                                </div>
+
+                                <div class="form-group">
+                                        <label for="taskType"><i class="fas fa-list"></i> 任务类型</label>
+                                        <select id="taskType" required>
+                                                <option value="">选择任务类型</option>
+                                                <option value="daily">每日任务</option>
+                                                <option value="weekly">每周任务</option>
+                                                <option value="monthly">每月任务</option>
+                                        </select>
+                                </div>
+
+                                <div class="form-group">
+                                        <label for="dueDate"><i class="fas fa-clock"></i> 到期时间</label>
+                                        <input type="datetime-local" id="dueDate" required>
+                                </div>
+
+                                <button type="submit"><i class="fas fa-plus"></i> 添加任务</button>
+                        </form>
+                </div>
+
+                <div class="task-list">
+                        <h2 class="section-title"><i class="fas fa-tasks"></i> 任务列表</h2>
+                        <div id="tasksContainer">
+                                <!-- 任务将通过JavaScript动态添加 -->
+                                <div class="empty-state" id="emptyState">
+                                        <i class="fas fa-clipboard-list"></i>
+                                        <p>暂无任务，请添加您的第一个任务</p>
+                                </div>
+                        </div>
+                </div>
+        </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
